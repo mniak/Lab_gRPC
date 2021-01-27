@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option csharp_namespace = "Lab_gRPC";
+
+package payment;
+
+service Payment {
+  rpc Pay (PaymentRequest) returns (PaymentReponse);
+}
+
+message PaymentRequest {
+  string cardNumber = 1;
+  string securityCode = 2;
+  uint32 amount = 3;
+}
+
+message PaymentReponse {
+  bool authorized = 1;
+  string paymentId = 2;
+}
