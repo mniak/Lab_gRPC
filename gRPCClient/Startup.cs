@@ -1,9 +1,11 @@
 using gRPCClient.Features.TestPayment;
+using Lab_gRPC;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
 
 namespace gRPCClient
 {
@@ -20,7 +22,16 @@ namespace gRPCClient
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            services.Configure<TestPaymentOptions>(Configuration.GetSection("TestPayment"));
+
+            var testPaymentOptions = Configuration.GetSection("TestPayment").Get<TestPaymentOptions>();
+            if (testPaymentOptions.EnableHttp)
+            {
+                AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+            }
+            services.AddGrpcClient<Payment.PaymentClient>(o =>
+            {
+                o.Address = testPaymentOptions.ServiceUrl;
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
