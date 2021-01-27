@@ -2,30 +2,33 @@
 using Grpc.Net.Client;
 using Lab_gRPC;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Threading.Tasks;
 
-namespace gRPCClient.Controllers
+namespace gRPCClient.Features.TestPayment
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("TestPayment")]
     public class TestPaymentController : ControllerBase
     {
-        private readonly ILogger _logger;
+        private readonly TestPaymentOptions options;
 
-        public TestPaymentController(ILogger<TestPaymentController> logger)
+        public TestPaymentController(IOptions<TestPaymentOptions> options)
         {
-            _logger = logger;
+            this.options = options.Value;
         }
 
         [HttpPost]
         public async Task<IActionResult> PostAsync()
         {
             var faker = new Faker();
-            AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+            if (options.EnableHttp)
+            {
+                AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+            }
 
-            using var channel = GrpcChannel.ForAddress("http://localhost:5001");
+            using var channel = GrpcChannel.ForAddress(options.ServiceUrl);
             var client = new Payment.PaymentClient(channel);
             var reply = await client.PayAsync(new PaymentRequest
             {
