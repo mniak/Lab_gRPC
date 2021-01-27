@@ -2,7 +2,6 @@
 using Grpc.Core;
 using Lab_gRPC;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -14,14 +13,10 @@ namespace gRPCClient.Features.TestPayment
     public class TestPaymentController : ControllerBase
     {
         private readonly Payment.PaymentClient client;
-        private readonly ILogger logger;
 
-        public TestPaymentController(
-            Payment.PaymentClient client,
-            ILogger<TestPaymentController> logger)
+        public TestPaymentController(Payment.PaymentClient client)
         {
             this.client = client ?? throw new ArgumentNullException(nameof(client));
-            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         [HttpPost]
