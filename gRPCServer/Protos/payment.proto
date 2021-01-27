@@ -17,4 +17,5 @@ message PaymentRequest {
 message PaymentReponse {
   bool authorized = 1;
   string paymentId = 2;
+  string clientId = 3;
 }
