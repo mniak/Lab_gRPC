@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace Lab_gRPC
 {
+    [Authorize]
     public class PaymentService : Payment.PaymentBase
     {
         private readonly ILogger<PaymentService> _logger;
@@ -15,7 +16,6 @@ namespace Lab_gRPC
             _logger = logger;
         }
 
-        [Authorize]
         public override Task<PaymentReponse> Pay(PaymentRequest request, ServerCallContext context)
         {
             var faker = new Faker();
