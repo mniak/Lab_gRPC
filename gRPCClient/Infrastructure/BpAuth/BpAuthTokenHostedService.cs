@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Polly.Registry;
 using Polly.Retry;
 using System;
 using System.Threading;
@@ -23,24 +24,24 @@ namespace gRPCClient.Infrastructure.BpAuth
         public BpAuthTokenHostedService(
             IBpAuthTokenClient bpAuthTokenClient,
             IBpAuthTokenHolder bpAuthTokenHolder,
-            AsyncRetryPolicy<bool> retryPolicy,
+            IPolicyRegistry<string> policyRegistry,
             ILogger<BpAuthTokenHostedService> logger,
             IOptions<BpAuthOptions> bpAuthOptions)
         {
             this.bpAuthTokenClient = bpAuthTokenClient ?? throw new ArgumentNullException(nameof(bpAuthTokenClient));
             this.bpAuthTokenHolder = bpAuthTokenHolder ?? throw new ArgumentNullException(nameof(bpAuthTokenHolder));
-            this.retryPolicy = retryPolicy ?? throw new ArgumentNullException(nameof(retryPolicy));
+            retryPolicy = policyRegistry.Get<AsyncRetryPolicy<bool>>(nameof(BpAuthTokenHostedService) + "." + nameof(AsyncRetryPolicy<bool>));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.bpAuthOptions = bpAuthOptions ?? throw new ArgumentNullException(nameof(bpAuthOptions));
         }
 
         protected async override Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            while (!stoppingToken.IsCancellationRequested && bpAuthOptions.Value.Enabled)
+            while (!stoppingToken.IsCancellationRequested)
             {
                 await retryPolicy.ExecuteAsync(() => GetAccessTokenAsync());
 
-                var duration = Math.Max(_token.ExpiresIn - (120), 5);
+                var duration = Math.Max(_token.ExpiresIn - 120, 5);
                 await Task.Delay(TimeSpan.FromSeconds(duration));
             }
         }

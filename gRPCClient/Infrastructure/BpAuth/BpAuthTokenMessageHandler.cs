@@ -24,7 +24,7 @@ namespace gRPCClient.Infrastructure.BpAuth
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            request.Headers.Authorization = new AuthenticationHeaderValue(BEARER, TokenHolder.Token.AccessToken);
+            request.Headers.Authorization = new AuthenticationHeaderValue(BEARER, TokenHolder.Token?.AccessToken);
             return base.SendAsync(request, cancellationToken);
         }
     }

@@ -1,5 +1,4 @@
 ﻿using Bogus;
-using Grpc.Core;
 using Lab_gRPC;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -24,16 +23,12 @@ namespace gRPCClient.Features.TestPayment
         {
             var faker = new Faker();
 
-            var headers = new Metadata(){
-                {"Authorization", $"Bearer {form["Token-gRPC"]}"}
-            };
-
             var reply = await client.PayAsync(new PaymentRequest
             {
                 Amount = faker.Random.UInt(10000),
                 CardNumber = faker.Finance.CreditCardNumber(),
                 SecurityCode = faker.Finance.CreditCardCvv(),
-            }, headers);
+            });
             return Ok(new
             {
                 Message = "It worked!",

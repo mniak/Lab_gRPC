@@ -19,8 +19,18 @@ namespace gRPCClient.Infrastructure.BpAuth
 
         public async Task<TokenResponse> GetAccessTokenAsync()
         {
+            var discoveryResponse = await httpClient.GetDiscoveryDocumentAsync(bpAuthOptions.Value.Authority);
+            if (discoveryResponse.IsError)
+            {
+                throw new CouldNotIssueBpAuthTokenException()
+                {
+                    Error = discoveryResponse.Error,
+                };
+            }
+
             var requestMessage = new ClientCredentialsTokenRequest()
             {
+                Address = discoveryResponse.TokenEndpoint,
                 ClientId = bpAuthOptions.Value.ClientId,
                 ClientSecret = bpAuthOptions.Value.ClientSecret,
             };

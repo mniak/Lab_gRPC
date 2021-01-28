@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Polly;
+using Polly.Retry;
 using System;
 
 namespace gRPCClient
@@ -20,10 +21,11 @@ namespace gRPCClient
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+            services.Configure<BpAuthOptions>(Configuration.GetSection("BpAuth"));
+
 
             var testPaymentOptions = Configuration.GetSection("TestPayment").Get<TestPaymentOptions>();
             if (testPaymentOptions.EnableHttp)
@@ -34,21 +36,20 @@ namespace gRPCClient
             {
                 o.Address = testPaymentOptions.ServiceUrl;
             }).AddHttpMessageHandler<BpAuthTokenMessageHandler>();
+            services.AddSingleton<BpAuthTokenMessageHandler>();
 
             services.AddSingleton<IHostedService, BpAuthTokenHostedService>();
             services.AddPolicyRegistry()
-                .Add("exponential-2-60", Policy.HandleResult(false)
+                .Add(nameof(BpAuthTokenHostedService) + "." + nameof(AsyncRetryPolicy<bool>), Policy.HandleResult(false)
                     .WaitAndRetryForeverAsync(n => n > 6 /* 2^6 = 64 (1 minute max) */
                         ? TimeSpan.FromMinutes(1)
                         : TimeSpan.FromSeconds(Math.Pow(2, n))
                     )
                 );
-            services.AddHttpClient<IBpAuthTokenClient, BpAuthTokenClient>()
-                .AddPolicyHandlerFromRegistry("exponential-2-60");
+            services.AddHttpClient<IBpAuthTokenClient, BpAuthTokenClient>();
             services.AddSingleton<IBpAuthTokenHolder, BpAuthTokenHolder>();
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
