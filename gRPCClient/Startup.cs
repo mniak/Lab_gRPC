@@ -1,10 +1,12 @@
 using gRPCClient.Features.TestPayment;
+using gRPCClient.Infrastructure.BpAuth;
 using Lab_gRPC;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Polly;
 using System;
 
 namespace gRPCClient
@@ -31,7 +33,19 @@ namespace gRPCClient
             services.AddGrpcClient<Payment.PaymentClient>(o =>
             {
                 o.Address = testPaymentOptions.ServiceUrl;
-            });
+            }).AddHttpMessageHandler<BpAuthTokenMessageHandler>();
+
+            services.AddSingleton<IHostedService, BpAuthTokenHostedService>();
+            services.AddPolicyRegistry()
+                .Add("exponential-2-60", Policy.HandleResult(false)
+                    .WaitAndRetryForeverAsync(n => n > 6 /* 2^6 = 64 (1 minute max) */
+                        ? TimeSpan.FromMinutes(1)
+                        : TimeSpan.FromSeconds(Math.Pow(2, n))
+                    )
+                );
+            services.AddHttpClient<IBpAuthTokenClient, BpAuthTokenClient>()
+                .AddPolicyHandlerFromRegistry("exponential-2-60");
+            services.AddSingleton<IBpAuthTokenHolder, BpAuthTokenHolder>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
